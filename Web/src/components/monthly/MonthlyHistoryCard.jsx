@@ -19,14 +19,19 @@ export default function MonthlyHistoryCard({
 
   // Recalculate live records for comparison
   const currentLive = calculateMonthlyTotal(records, summary.month, summary.year);
-  const isOutOfSync = currentLive.totalWeight !== summary.totalWeight || currentLive.totalDiamonds !== summary.totalDiamonds;
+  const isOutOfSync = currentLive.totalWeight !== summary.totalWeight ||
+                      currentLive.totalDiamonds !== summary.totalDiamonds ||
+                      (summary.depositedWeight !== undefined && currentLive.depositedWeight !== summary.depositedWeight) ||
+                      (summary.depositedDiamonds !== undefined && currentLive.depositedDiamonds !== summary.depositedDiamonds);
 
-  // Handle in-place recalculation
+  // Handle in-place recalculation based on deposited weight
   const handleRecalculate = () => {
-    const updatedAmount = calculateTotalAmount(currentLive.totalWeight, summary.pricePerCarat);
+    const updatedAmount = calculateTotalAmount(currentLive.depositedWeight, summary.pricePerCarat);
     updateMonthlySummary(summary.id, {
       totalWeight: currentLive.totalWeight,
       totalDiamonds: currentLive.totalDiamonds,
+      depositedWeight: currentLive.depositedWeight,
+      depositedDiamonds: currentLive.depositedDiamonds,
       totalAmount: updatedAmount,
     });
   };
@@ -42,6 +47,9 @@ export default function MonthlyHistoryCard({
   }, {});
 
   const sortedDailyList = Object.values(dailyGroups).sort((a, b) => a.date.localeCompare(b.date));
+
+  const depWeight = summary.depositedWeight !== undefined ? summary.depositedWeight : summary.totalWeight;
+  const depDiamonds = summary.depositedDiamonds !== undefined ? summary.depositedDiamonds : summary.totalDiamonds;
 
   return (
     <>
@@ -82,13 +90,27 @@ export default function MonthlyHistoryCard({
 
           {/* Metrics */}
           <div className="mt-5 space-y-4">
-            {/* Total Production */}
-            <div>
-              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                Total Production
-              </span>
-              <div className="text-2xl sm:text-3xl font-black text-slate-900 mt-0.5 font-mono-numbers">
-                {formatCarat(summary.totalWeight)}
+            {/* Total Production & Deposited Production */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+                  Total Production
+                </span>
+                <div className="text-xl sm:text-2xl font-black text-slate-800 mt-0.5 font-mono-numbers">
+                  {formatCarat(summary.totalWeight)}
+                </div>
+                <span className="text-[11px] text-slate-500">{summary.totalDiamonds} Diamonds</span>
+              </div>
+
+              <div>
+                <span className="text-[11px] font-semibold text-emerald-600 uppercase tracking-wider flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                  <span>Deposited</span>
+                </span>
+                <div className="text-xl sm:text-2xl font-black text-emerald-700 mt-0.5 font-mono-numbers">
+                  {formatCarat(depWeight)}
+                </div>
+                <span className="text-[11px] text-emerald-600 font-medium">{depDiamonds} Deposited</span>
               </div>
             </div>
 
@@ -102,19 +124,11 @@ export default function MonthlyHistoryCard({
               </div>
 
               <div>
-                <span className="text-xs font-medium text-slate-400">Total Amount</span>
+                <span className="text-xs font-medium text-slate-400">Total Wages</span>
                 <div className="text-lg font-black text-emerald-600 mt-0.5 font-mono-numbers">
                   {formatCurrency(summary.totalAmount)}
                 </div>
               </div>
-            </div>
-
-            {/* Diamonds Count */}
-            <div className="pt-2 text-xs text-slate-500 font-medium flex items-center justify-between">
-              <span className="flex items-center gap-1.5">
-                <Gem className="w-3.5 h-3.5 text-indigo-500" />
-                <span>{summary.totalDiamonds} Diamonds Produced</span>
-              </span>
             </div>
           </div>
         </div>

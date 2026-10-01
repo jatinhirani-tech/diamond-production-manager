@@ -19,6 +19,7 @@ export default function RecordForm({
     hasUniqueId: false,
     packetId: '',
     notes: '',
+    isDeposited: false,
   });
 
   const [errors, setErrors] = useState({});
@@ -33,6 +34,7 @@ export default function RecordForm({
         hasUniqueId: Boolean(initialData.hasUniqueId),
         packetId: initialData.packetId || '',
         notes: initialData.notes || '',
+        isDeposited: Boolean(initialData.isDeposited),
       });
     }
   }, [initialData]);
@@ -80,6 +82,7 @@ export default function RecordForm({
         weight: '',
         packetId: '',
         notes: '',
+        isDeposited: false,
       }));
       setTouched({});
       setErrors({});
@@ -232,6 +235,42 @@ export default function RecordForm({
             )}
           </div>
         )}
+      </div>
+
+      {/* Deposit Status Section */}
+      <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 space-y-3">
+        <label className="block text-sm font-bold text-slate-800 flex items-center justify-between">
+          <span>Deposit Status <span className="text-rose-500">*</span></span>
+          <span className="text-xs text-slate-400 font-normal">Included in monthly earnings only if deposited</span>
+        </label>
+
+        <div className="grid grid-cols-2 gap-3 max-w-sm">
+          <button
+            type="button"
+            onClick={() => handleChange('isDeposited', true)}
+            className={`py-2.5 px-4 rounded-xl text-sm font-bold border transition-all flex items-center justify-center gap-2 ${
+              formData.isDeposited
+                ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
+                : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
+            }`}
+          >
+            {formData.isDeposited && <Check className="w-4 h-4 text-white" />}
+            <span>Deposited</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleChange('isDeposited', false)}
+            className={`py-2.5 px-4 rounded-xl text-sm font-bold border transition-all flex items-center justify-center gap-2 ${
+              !formData.isDeposited
+                ? 'bg-slate-900 text-white border-slate-900 shadow-sm'
+                : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
+            }`}
+          >
+            {!formData.isDeposited && <Check className="w-4 h-4 text-emerald-400" />}
+            <span>Not Deposited</span>
+          </button>
+        </div>
       </div>
 
       {/* Notes Field */}

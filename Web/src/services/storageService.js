@@ -16,7 +16,12 @@ export const storageService = {
       const data = localStorage.getItem(RECORDS_KEY);
       if (!data) return [];
       const parsed = JSON.parse(data);
-      return Array.isArray(parsed) ? parsed : [];
+      if (!Array.isArray(parsed)) return [];
+      // Ensure safe fallback for records created before this feature existed
+      return parsed.map(r => ({
+        ...r,
+        isDeposited: Boolean(r.isDeposited),
+      }));
     } catch (err) {
       console.error('Failed to read diamond records from localStorage:', err);
       return [];
@@ -54,6 +59,7 @@ export const storageService = {
       hasUniqueId: Boolean(record.hasUniqueId),
       packetId: record.hasUniqueId ? (record.packetId || '').trim() : null,
       notes: (record.notes || '').trim(),
+      isDeposited: Boolean(record.isDeposited),
       createdAt: record.createdAt || now,
       updatedAt: now,
     };
@@ -84,6 +90,7 @@ export const storageService = {
         ? (updatedFields.packetId || '').trim()
         : (updatedFields.hasUniqueId === false ? null : existing.packetId),
       notes: updatedFields.notes !== undefined ? (updatedFields.notes || '').trim() : existing.notes,
+      isDeposited: updatedFields.isDeposited !== undefined ? Boolean(updatedFields.isDeposited) : Boolean(existing.isDeposited),
       updatedAt: new Date().toISOString(),
     };
 
@@ -143,6 +150,8 @@ export const storageService = {
       year: Number(summary.year),
       totalDiamonds: Number(summary.totalDiamonds),
       totalWeight: Number(summary.totalWeight),
+      depositedDiamonds: Number(summary.depositedDiamonds !== undefined ? summary.depositedDiamonds : summary.totalDiamonds),
+      depositedWeight: Number(summary.depositedWeight !== undefined ? summary.depositedWeight : summary.totalWeight),
       pricePerCarat: Number(summary.pricePerCarat),
       totalAmount: Number(summary.totalAmount),
       notes: summary.notes || '',

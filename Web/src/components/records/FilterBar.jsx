@@ -7,6 +7,8 @@ export default function FilterBar({
   onShapeFilterChange,
   uniqueIdFilter,
   onUniqueIdFilterChange,
+  depositFilter = 'All',
+  onDepositFilterChange,
   dateFilter,
   onDateFilterChange,
   sortOption,
@@ -44,6 +46,20 @@ export default function FilterBar({
           <option value="All">All Packets</option>
           <option value="HasUniqueId">Has Unique ID</option>
           <option value="NoUniqueId">No Unique ID</option>
+        </select>
+      </div>
+
+      {/* Deposit Status Filter */}
+      <div className="flex items-center gap-1.5 min-w-[130px] flex-1 sm:flex-initial">
+        <label className="text-xs font-semibold text-slate-500 whitespace-nowrap">Deposit:</label>
+        <select
+          value={depositFilter}
+          onChange={(e) => onDepositFilterChange(e.target.value)}
+          className="w-full text-xs font-medium bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+        >
+          <option value="All">All Statuses</option>
+          <option value="Deposited">Deposited</option>
+          <option value="NotDeposited">Not Deposited</option>
         </select>
       </div>
 

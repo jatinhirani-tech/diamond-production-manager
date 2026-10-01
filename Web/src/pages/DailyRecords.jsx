@@ -24,6 +24,7 @@ export default function DailyRecords() {
   const [searchQuery, setSearchQuery] = useState('');
   const [shapeFilter, setShapeFilter] = useState('All');
   const [uniqueIdFilter, setUniqueIdFilter] = useState('All');
+  const [depositFilter, setDepositFilter] = useState('All');
   const [dateFilter, setDateFilter] = useState(initialDate);
   const [sortOption, setSortOption] = useState('newest');
 
@@ -44,6 +45,14 @@ export default function DailyRecords() {
         return false;
       }
       if (uniqueIdFilter === 'NoUniqueId' && rec.hasUniqueId) {
+        return false;
+      }
+
+      // Deposit status filter
+      if (depositFilter === 'Deposited' && !rec.isDeposited) {
+        return false;
+      }
+      if (depositFilter === 'NotDeposited' && rec.isDeposited) {
         return false;
       }
 
@@ -106,11 +115,12 @@ export default function DailyRecords() {
     return groupRecordsByDate(sortedRecords);
   }, [sortedRecords, sortOption]);
 
-  const hasActiveFilters = shapeFilter !== 'All' || uniqueIdFilter !== 'All' || dateFilter !== '' || searchQuery !== '';
+  const hasActiveFilters = shapeFilter !== 'All' || uniqueIdFilter !== 'All' || depositFilter !== 'All' || dateFilter !== '' || searchQuery !== '';
 
   const handleResetFilters = () => {
     setShapeFilter('All');
     setUniqueIdFilter('All');
+    setDepositFilter('All');
     setDateFilter('');
     setSearchQuery('');
   };
@@ -171,6 +181,8 @@ export default function DailyRecords() {
           onShapeFilterChange={setShapeFilter}
           uniqueIdFilter={uniqueIdFilter}
           onUniqueIdFilterChange={setUniqueIdFilter}
+          depositFilter={depositFilter}
+          onDepositFilterChange={setDepositFilter}
           dateFilter={dateFilter}
           onDateFilterChange={setDateFilter}
           sortOption={sortOption}

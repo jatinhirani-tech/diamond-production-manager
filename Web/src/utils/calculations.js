@@ -65,24 +65,30 @@ export function getMonthlyRecords(records = [], month, year) {
 }
 
 /**
- * Calculates the monthly total weight and count from individual diamond records
+ * Calculates the monthly total weight and count from individual diamond records,
+ * separating total production from deposited production
  * @param {Array} records
  * @param {number|string} month (1-12)
  * @param {number|string} year
- * @returns {{ totalWeight: number, totalDiamonds: number, records: Array }}
+ * @returns {{ totalWeight: number, totalDiamonds: number, depositedWeight: number, depositedDiamonds: number, records: Array, depositedRecords: Array }}
  */
 export function calculateMonthlyTotal(records = [], month, year) {
   const monthRecords = getMonthlyRecords(records, month, year);
+  const depositedRecords = monthRecords.filter(r => Boolean(r?.isDeposited));
+
   return {
     totalWeight: calculateTotalWeight(monthRecords),
     totalDiamonds: monthRecords.length,
-    records: monthRecords
+    depositedWeight: calculateTotalWeight(depositedRecords),
+    depositedDiamonds: depositedRecords.length,
+    records: monthRecords,
+    depositedRecords
   };
 }
 
 /**
- * Calculates Total Amount = Total Weight × Price Per Carat
- * @param {number} weight
+ * Calculates Total Amount = Deposited Weight × Price Per Carat
+ * @param {number} weight (deposited weight)
  * @param {number} pricePerCarat
  * @returns {number}
  */
@@ -104,12 +110,16 @@ export function getTodayRecords(records = []) {
 
 /**
  * Calculates lifetime production across all saved monthly summaries
+ * Uses depositedWeight when available, falling back to totalWeight for legacy summaries
  * @param {Array} monthlySummaries
  * @returns {number}
  */
 export function calculateLifetimeProduction(monthlySummaries = []) {
   if (!Array.isArray(monthlySummaries)) return 0;
-  const sum = monthlySummaries.reduce((acc, curr) => acc + (Number(curr?.totalWeight) || 0), 0);
+  const sum = monthlySummaries.reduce((acc, curr) => {
+    const w = curr?.depositedWeight !== undefined ? Number(curr.depositedWeight) : (Number(curr?.totalWeight) || 0);
+    return acc + (isNaN(w) ? 0 : w);
+  }, 0);
   return cleanFloat(sum);
 }
 

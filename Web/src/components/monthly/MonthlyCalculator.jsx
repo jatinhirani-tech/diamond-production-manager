@@ -18,6 +18,8 @@ export default function MonthlyCalculator({ initialMonth, initialYear }) {
   const [hasCalculated, setHasCalculated] = useState(false);
   const [totalDiamonds, setTotalDiamonds] = useState(0);
   const [totalWeight, setTotalWeight] = useState(0);
+  const [depositedDiamonds, setDepositedDiamonds] = useState(0);
+  const [depositedWeight, setDepositedWeight] = useState(0);
   const [monthRecords, setMonthRecords] = useState([]);
   const [pricePerCarat, setPricePerCarat] = useState('');
   const [priceError, setPriceError] = useState('');
@@ -41,7 +43,13 @@ export default function MonthlyCalculator({ initialMonth, initialYear }) {
   }, [selectedMonth, selectedYear, existingSummary, records]);
 
   const performCalculation = (isUserClick = true) => {
-    const { totalWeight: weight, totalDiamonds: count, records: mRecs } = calculateMonthlyTotal(
+    const {
+      totalWeight: weight,
+      totalDiamonds: count,
+      depositedWeight: depWeight,
+      depositedDiamonds: depCount,
+      records: mRecs
+    } = calculateMonthlyTotal(
       records,
       selectedMonth,
       selectedYear
@@ -49,13 +57,15 @@ export default function MonthlyCalculator({ initialMonth, initialYear }) {
 
     setTotalWeight(weight);
     setTotalDiamonds(count);
+    setDepositedWeight(depWeight);
+    setDepositedDiamonds(depCount);
     setMonthRecords(mRecs);
     setHasCalculated(true);
   };
 
-  // Live total amount calculation
+  // Live total amount calculation strictly based on deposited weight
   const numericPrice = Number(pricePerCarat) || 0;
-  const totalAmount = calculateTotalAmount(totalWeight, numericPrice);
+  const totalAmount = calculateTotalAmount(depositedWeight, numericPrice);
 
   const handlePriceChange = (val) => {
     setPricePerCarat(val);
@@ -75,6 +85,8 @@ export default function MonthlyCalculator({ initialMonth, initialYear }) {
       year: Number(selectedYear),
       totalDiamonds,
       totalWeight,
+      depositedDiamonds,
+      depositedWeight,
       pricePerCarat: Number(pricePerCarat),
       totalAmount,
       notes: summaryNotes,
@@ -122,7 +134,9 @@ export default function MonthlyCalculator({ initialMonth, initialYear }) {
   // Check if saved summary is outdated compared to current live records
   const isOutOfSync = existingSummary && (
     existingSummary.totalWeight !== totalWeight ||
-    existingSummary.totalDiamonds !== totalDiamonds
+    existingSummary.totalDiamonds !== totalDiamonds ||
+    (existingSummary.depositedWeight !== undefined && existingSummary.depositedWeight !== depositedWeight) ||
+    (existingSummary.depositedDiamonds !== undefined && existingSummary.depositedDiamonds !== depositedDiamonds)
   );
 
   return (
@@ -211,16 +225,49 @@ export default function MonthlyCalculator({ initialMonth, initialYear }) {
               </span>
             </div>
 
-            <div className="mt-6 space-y-6">
+            <div className="mt-6 space-y-5">
+              {/* Total Production Weight */}
               <div>
-                <span className="text-xs font-semibold text-slate-500">Total Weight Produced</span>
+                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Production Weight</span>
                 <div className="text-4xl sm:text-5xl font-black text-slate-900 mt-1 font-mono-numbers tracking-tight">
                   {formatCarat(totalWeight)}
                 </div>
                 <p className="text-xs text-slate-400 mt-1">
-                  Accurately aggregated from every diamond logged in {monthName}.
+                  All {totalDiamonds} diamond {totalDiamonds === 1 ? 'piece' : 'pieces'} produced in {monthName}.
                 </p>
               </div>
+
+              {/* Deposited Production Box */}
+              <div className="p-4 rounded-xl bg-emerald-50/70 border border-emerald-200/90 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-emerald-800 flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                    <span>Deposited Production</span>
+                  </span>
+                  <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+                    {depositedDiamonds} Deposited
+                  </span>
+                </div>
+                <div className="text-2xl font-black text-emerald-700 font-mono-numbers">
+                  {formatCarat(depositedWeight)}
+                </div>
+                <p className="text-[11px] text-emerald-600 leading-tight">
+                  Monthly earnings and wages are calculated exclusively from deposited carats.
+                </p>
+              </div>
+
+              {/* Not Deposited / Pending Breakdown */}
+              {totalDiamonds > depositedDiamonds && (
+                <div className="p-3 rounded-xl bg-amber-50/70 border border-amber-200/90 flex items-center justify-between text-xs">
+                  <span className="font-semibold text-amber-800 flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-amber-500" />
+                    <span>Not Deposited / Pending</span>
+                  </span>
+                  <span className="font-bold text-amber-800 font-mono-numbers">
+                    {totalDiamonds - depositedDiamonds} Pcs ({formatCarat(cleanFloat(totalWeight - depositedWeight))})
+                  </span>
+                </div>
+              )}
 
               <div className="pt-4 border-t border-slate-100 grid grid-cols-2 gap-4">
                 <div>
@@ -241,7 +288,7 @@ export default function MonthlyCalculator({ initialMonth, initialYear }) {
 
           <div className="mt-6 pt-4 border-t border-slate-100 text-xs text-slate-500 flex items-center gap-1.5">
             <Gem className="w-4 h-4 text-indigo-500 shrink-0" />
-            <span>Formula: Sum of each individual diamond weight in {monthName}</span>
+            <span>Earnings Formula: Deposited Weight × Price Per Carat</span>
           </div>
         </div>
 
@@ -253,7 +300,7 @@ export default function MonthlyCalculator({ initialMonth, initialYear }) {
                 Price Calculation
               </span>
               <span className="text-xs text-slate-400">
-                Formula: Weight × Price/CT
+                Formula: Deposited Weight × Price/CT
               </span>
             </div>
 
@@ -289,8 +336,8 @@ export default function MonthlyCalculator({ initialMonth, initialYear }) {
                 <div className="text-3xl sm:text-4xl font-extrabold text-emerald-400 mt-1 font-mono-numbers tracking-tight">
                   {formatCurrency(totalAmount)}
                 </div>
-                <div className="mt-2 text-xs text-slate-400 font-mono flex items-center gap-2">
-                  <span>{formatCarat(totalWeight, false)} CT</span>
+                <div className="mt-2 text-xs text-slate-400 font-mono flex items-center gap-2 flex-wrap">
+                  <span className="text-sky-300 font-bold">{formatCarat(depositedWeight, false)} CT (Deposited)</span>
                   <span>×</span>
                   <span>₹{numericPrice > 0 ? numericPrice : 0}</span>
                   <span>=</span>

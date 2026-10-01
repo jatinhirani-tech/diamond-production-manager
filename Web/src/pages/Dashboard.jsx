@@ -9,7 +9,8 @@ import {
   ArrowRight, 
   Sparkles,
   Layers,
-  History
+  History,
+  Clock
 } from 'lucide-react';
 import { useDiamond } from '../context/DiamondContext';
 import { 
@@ -58,7 +59,7 @@ export default function Dashboard() {
   const todayRecords = useMemo(() => getTodayRecords(records), [records]);
   const todayWeight = useMemo(() => calculateTotalWeight(todayRecords), [todayRecords]);
 
-  // Current Month records & weight
+  // Current Month records, total production, and deposited production
   const currentMonthRecords = useMemo(() => 
     getMonthlyRecords(records, currentMonth, currentYear), 
     [records, currentMonth, currentYear]
@@ -67,21 +68,35 @@ export default function Dashboard() {
     calculateTotalWeight(currentMonthRecords), 
     [currentMonthRecords]
   );
+  const currentMonthDepositedRecords = useMemo(() =>
+    currentMonthRecords.filter(r => Boolean(r.isDeposited)),
+    [currentMonthRecords]
+  );
+  const currentMonthDepositedWeight = useMemo(() =>
+    calculateTotalWeight(currentMonthDepositedRecords),
+    [currentMonthDepositedRecords]
+  );
 
-  // Current Month Earnings: check saved summary price or default price if not saved yet
+  // Current Month Earnings: strictly based on deposited weight (Section 6 & 9)
   const currentMonthSummary = useMemo(() => {
     const id = `${currentYear}-${String(currentMonth).padStart(2, '0')}`;
     return monthlySummaries.find(s => s.id === id);
   }, [monthlySummaries, currentYear, currentMonth]);
 
   const currentMonthEarnings = useMemo(() => {
-    if (currentMonthSummary) {
-      return calculateTotalAmount(currentMonthWeight, currentMonthSummary.pricePerCarat);
-    }
-    // Fallback: use most recent saved summary's rate if available, or ₹500
-    const latestRate = monthlySummaries[0]?.pricePerCarat || 500;
-    return calculateTotalAmount(currentMonthWeight, latestRate);
-  }, [currentMonthSummary, currentMonthWeight, monthlySummaries]);
+    const rate = currentMonthSummary ? currentMonthSummary.pricePerCarat : (monthlySummaries[0]?.pricePerCarat || 500);
+    return calculateTotalAmount(currentMonthDepositedWeight, rate);
+  }, [currentMonthSummary, currentMonthDepositedWeight, monthlySummaries]);
+
+  // All-time pending deposits (Section 14)
+  const pendingRecords = useMemo(() =>
+    records.filter(r => !r.isDeposited),
+    [records]
+  );
+  const pendingWeight = useMemo(() =>
+    calculateTotalWeight(pendingRecords),
+    [pendingRecords]
+  );
 
   // Monthly trend for the chart
   const monthlyTrendData = useMemo(() => 
@@ -157,7 +172,7 @@ export default function Dashboard() {
         <StatCard
           title="This Month"
           value={formatCarat(currentMonthWeight)}
-          subvalue={`${currentMonthRecords.length} diamonds in ${formatMonthYear(currentYear, currentMonth)}`}
+          subvalue={`${formatCarat(currentMonthDepositedWeight)} deposited • ${currentMonthRecords.length} pcs`}
           icon={CalendarRange}
           iconBg="bg-emerald-50 text-emerald-600"
           onClick={() => navigate(`/monthly?month=${currentMonth}&year=${currentYear}`)}
@@ -166,12 +181,38 @@ export default function Dashboard() {
         <StatCard
           title="Earnings (Est.)"
           value={formatCurrency(currentMonthEarnings)}
-          subvalue={currentMonthSummary ? `Locked at ₹${currentMonthSummary.pricePerCarat}/CT` : `Est. based on ₹${monthlySummaries[0]?.pricePerCarat || 500}/CT`}
+          subvalue={`Calculated on ${formatCarat(currentMonthDepositedWeight, false)} CT deposited`}
           icon={IndianRupee}
           iconBg="bg-amber-50 text-amber-600"
           onClick={() => navigate('/monthly')}
         />
       </div>
+
+      {/* Pending Deposits Information Banner (Section 14) */}
+      {pendingRecords.length > 0 && (
+        <div className="bg-amber-50/70 border border-amber-200/90 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-subtle animate-fadeIn">
+          <div className="flex items-center gap-3.5">
+            <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
+              <Clock className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="text-sm font-bold text-slate-900">
+                Pending Deposits: <span className="text-amber-800 font-mono-numbers">{pendingRecords.length} Diamonds ({formatCarat(pendingWeight)})</span>
+              </div>
+              <p className="text-xs text-slate-500 mt-0.5">
+                These pieces are not yet deposited and do not contribute to monthly earnings.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => navigate('/records')}
+            className="inline-flex items-center gap-1 text-xs font-bold text-amber-800 hover:text-amber-950 underline self-start sm:self-center whitespace-nowrap"
+          >
+            <span>Review in Daily Records</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
 
       {/* Row 2: Today's Production & Quick Add Form */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
